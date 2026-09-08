@@ -13,6 +13,9 @@ const TRUSTED_ORIGINS = new Set(
     [
         process.env.BELLWATCH_ORIGIN,
         process.env.FASTPAY_URL,
+        // Hardcoded production fallbacks — these are public demo URLs, not secrets.
+        'https://bellwatch-7sq6.onrender.com',
+        'https://fastpay-wbm6.onrender.com',
         'http://localhost:3000',
         'http://127.0.0.1:3000',
         'http://localhost:8000',
@@ -65,8 +68,14 @@ async function publish(envelope, row) {
 async function transfer(req, res) {
     if (!req.is('application/json')) return res.status(415).json({reason: 'Use a JSON wallet request.'});
     const incomingOrigin = req.get('origin');
-    const sameHost = `${req.protocol}://${req.get('host')}`;
-    if (incomingOrigin && incomingOrigin !== sameHost && !TRUSTED_ORIGINS.has(incomingOrigin)) {
+    // On Render (and most reverse proxies), req.protocol reflects the internal connection
+    // (http) even when the browser used https. Build both variants so the same-host check
+    // works regardless of proxy trust settings.
+    const host = req.get('host');
+    const sameHostHttp  = `http://${host}`;
+    const sameHostHttps = `https://${host}`;
+    const isSameHost = incomingOrigin === sameHostHttp || incomingOrigin === sameHostHttps;
+    if (incomingOrigin && !isSameHost && !TRUSTED_ORIGINS.has(incomingOrigin)) {
         return res.status(403).json({reason: 'Cross-origin wallet requests are refused.'});
     }
     const amount = req.body.amount_paise;
