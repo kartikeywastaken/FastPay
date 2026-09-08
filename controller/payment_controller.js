@@ -3,6 +3,45 @@ const {Users, Orders, MovieTickets, FoodOrders} = require('../models/db')
 const nodemailer = require('nodemailer');
 const STRIPE_PUBLISHABLE_KEY = process.env['STRIPE_PUBLISHABLE_KEY']
 
+const BELLWATCH_API =
+  process.env.BELLWATCH_API_URL || 'http://127.0.0.1:8000';
+
+async function checkBellwatch() {
+  // 1. Create E91 session
+  const sessionRes = await fetch(`${BELLWATCH_API}/channel/session`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      rounds: 1024,
+      seed: Date.now() % 2147483647
+    })
+  });
+
+  if (!sessionRes.ok) {
+    throw new Error('Bellwatch session creation failed');
+  }
+
+  const session = await sessionRes.json();
+
+  // 2. Get E91 status
+  const statusRes = await fetch(
+    `${BELLWATCH_API}/channel/${session.session_id}/status`
+  );
+
+  if (!statusRes.ok) {
+    throw new Error('Bellwatch status check failed');
+  }
+
+  const status = await statusRes.json();
+
+  return {
+    session_id: session.session_id,
+    status
+  };
+}
+
 const harcodedAdress = {name:"Demo", address: {city:"Bangalore", country: "IN", line1: "Demo Address", postal_code: "530068", state:"Karnataka"}}  // Sample address for dev environment in production this will user address
 
 const addBalance =  async (req, res) => {
@@ -250,5 +289,7 @@ module.exports = {
     sendTicketBookingConfirmation: sendTicketBookingConfirmation,
     orderFood: orderFood,
     onlineFoodOrderStatus: onlineFoodOrderStatus,
-    foodOrderDetails: foodOrderDetails
+    foodOrderDetails: foodOrderDetails,
+    checkBellwatch: checkBellwatch,
+    BELLWATCH_API: BELLWATCH_API
 }

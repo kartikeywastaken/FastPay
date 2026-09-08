@@ -4,6 +4,7 @@ const {Op, Transaction, literal} = require('sequelize');
 const {Users, Transfers, sequelize} = require('../models/db');
 const aliceUrl = process.env.ALICE_GATEWAY_URL || 'http://127.0.0.1:8001';
 const engineUrl = process.env.QDS_ENGINE_URL || 'http://127.0.0.1:8000';
+const {checkBellwatch, BELLWATCH_API} = require('./payment_controller');
 
 // Serialize SQLite write transactions in this single Node process. Conditional
 // SQL updates also protect against balances changing while HTTP was in flight.
@@ -65,6 +66,49 @@ async function transfer(req, res) {
         if (!sender || sender.walletBalance < amount) {
             return res.status(409).json({reason: 'Insufficient balance. Gateway was not called.'});
         }
+
+        // ── Bellwatch quantum-channel integrity check (must pass before any balance change) ──
+        const quantumCheck = await checkBellwatch();
+        console.log('Bellwatch result:', quantumCheck);
+
+        const qber    = quantumCheck.status.qber;
+        const chsh    = quantumCheck.status.chsh_s ?? quantumCheck.status.chsh;
+        const aborted = quantumCheck.status.aborted === true;
+
+        const quantumSafe =
+            !aborted &&
+            typeof qber === 'number' && qber <= 0.11 &&
+            typeof chsh === 'number' && chsh > 2.0;
+
+        if (!quantumSafe) {
+            // Record the refused payment in Bellwatch for audit.
+            await fetch(`${BELLWATCH_API}/channel/payment`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    envelope: {
+                        transfer_id: String(Date.now()),
+                        from_user:   String(sender?.email || sender?.username || 'alice'),
+                        to_user:     String(receiver?.email || receiver?.username || 'bob'),
+                        amount_paise: Math.round(Number(amount)),
+                        nonce:       String(Date.now())
+                    },
+                    session_id: quantumCheck.session_id,
+                    status:  'refused',
+                    stage:   'quantum_channel',
+                    reason:  `Bellwatch refused payment. QBER=${qber}, CHSH=${chsh}`
+                })
+            });
+
+            return res.status(403).json({
+                success: false,
+                message: 'Payment refused by Bellwatch: quantum channel integrity check failed.',
+                qber,
+                chsh
+            });
+        }
+        // ── End Bellwatch check ──
+
         const envelope = {transfer_id: crypto.randomUUID(), from_user: req.user.username,
             to_user: recipient, amount_paise: amount, nonce: crypto.randomBytes(24).toString('hex')};
         let verdict = {status: 'refused', stage: 'quantum_channel', session_id: null,
@@ -94,6 +138,28 @@ async function transfer(req, res) {
         }
         if (!row) row = await writeSerial(() => Transfers.create(rowFor(envelope, verdict)));
         await publish(envelope, row);
+
+        // If the transfer was accepted, record it in Bellwatch for audit.
+        if (row.status === 'ACCEPTED') {
+            await fetch(`${BELLWATCH_API}/channel/payment`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    envelope: {
+                        transfer_id: row.id,
+                        from_user:   String(sender?.email || sender?.username || 'alice'),
+                        to_user:     String(receiver?.email || receiver?.username || 'bob'),
+                        amount_paise: Math.round(Number(amount)),
+                        nonce:       String(Date.now())
+                    },
+                    session_id: quantumCheck.session_id,
+                    status:  'accepted',
+                    stage:   'committed',
+                    reason:  `Bellwatch passed payment. QBER=${qber}, CHSH=${chsh}`
+                })
+            });
+        }
+
         return res.status(row.status === 'ACCEPTED' ? 200 : 409).json({
             status: row.status, stage: row.stage, reason: row.reason, transfer: row, simulated: true});
     } catch (_) {
