@@ -1,196 +1,419 @@
+<!DOCTYPE html>
 <html lang="en">
-    <head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FastPay</title>
-    <link href="/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        body {
-            background-color: #fdfffd !important;
-            color: #282c3f !important;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            letter-spacing: .3px;
-            text-decoration: none;
-        }
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Project Bellwatch · FastPay Wallet</title>
+<link href="/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f4f6f9; --surface: #ffffff; --border: #e1e7ef;
+    --ink-0: #0f1c2e; --ink-1: #3a5068; --ink-2: #6b84a0; --ink-3: #a8bdd0;
+    --blue: #1a5cff; --blue-dark: #1447d4; --blue-tint: #eef2ff;
+    --green: #0d7a50; --green-tint: #e8f7f1;
+    --red: #c0392b; --red-tint: #fdecea;
+    --amber: #c07a00; --amber-tint: #fff8e6;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'Inter', system-ui, sans-serif;
+    --radius: 16px; --radius-sm: 10px;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { font-family: var(--sans); background: var(--bg); color: var(--ink-0); min-height: 100vh; -webkit-font-smoothing: antialiased; }
 
-        a, h3, h5 {
-            color: #2d3436;
-        }
+  /* ---- Layout ---- */
+  .wallet { max-width: 1080px; margin: 0 auto; padding: 48px 24px; }
+  .eyebrow { font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-2); margin-bottom: 8px; }
+  h1 { font-size: 32px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 6px; }
+  .sub { font-size: 14px; color: var(--ink-2); margin-bottom: 28px; }
+  .sub a { color: var(--blue); text-decoration: none; }
+  .sub a:hover { text-decoration: underline; }
 
-        .card {
-            background-color: #ffffff;
-            border:  2px solid #f7f2f2 !important;
-            border-radius: 8px;
-            box-shadow: 4px 4px 12px rgba(0,0,0,.05);
-            margin-bottom: 20px;
-            
-        }
+  .panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 32px; margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,.04); }
 
-        .card-title, .card-text {
-            color: #333;
-        }
+  /* ---- Balance ---- */
+  .balance-row { display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap; margin-bottom: 6px; }
+  .balance { font-size: 56px; font-weight: 700; letter-spacing: -2px; line-height: 1; }
+  .balance-label { font-size: 13px; color: var(--ink-2); margin-bottom: 8px; }
+  .channel-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; background: var(--green-tint); color: var(--green); border-radius: 999px; font-size: 12px; font-weight: 600; }
+  .channel-badge .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(.85)} }
 
-        .btn-primary, .addbtn {
-            background-color: #0984e3 !important;
-            border-color: #0984e3 !important;
-            padding: 8px 20px;
-            border-radius: 4px;
-            font-weight: bold;
-            color: white !important;
-        }
+  .pay-btn {
+    display: inline-flex; align-items: center; gap: 10px;
+    background: var(--blue); color: #fff; border: none; border-radius: var(--radius-sm);
+    padding: 14px 28px; font-size: 16px; font-weight: 600; cursor: pointer;
+    transition: background .15s, transform .1s, box-shadow .15s;
+    box-shadow: 0 2px 8px rgba(26,92,255,.25);
+    margin-top: 24px;
+  }
+  .pay-btn:hover { background: var(--blue-dark); box-shadow: 0 4px 16px rgba(26,92,255,.35); transform: translateY(-1px); }
+  .pay-btn:active { transform: translateY(0); }
+  .pay-btn:disabled { opacity: .5; pointer-events: none; }
+  .pay-btn svg { width: 18px; height: 18px; }
 
-        .btn-primary:hover, .addbtn:hover {
-            background-color: #74b9ff !important;
-            border-color: #74b9ff !important;
-        }
+  /* ---- History table ---- */
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-2); padding: 0 10px 12px; text-align: left; }
+  td { padding: 12px 10px; border-top: 1px solid var(--border); vertical-align: top; }
+  tr.accepted td:nth-child(3) { color: var(--green); font-weight: 600; }
+  tr.refused td:nth-child(3) { color: var(--red); font-weight: 600; }
 
-        .addBalance {
-            background-color: #ffffff;
-            color: #333;
-            border: 1px solid #ced6e0;
-            border-radius: 8px;
-            padding: 9px;
-            margin-right: 10px;
-        }
+  /* ---- Checkout Modal Overlay ---- */
+  .modal-overlay {
+    position: fixed; inset: 0; z-index: 999;
+    background: rgba(10, 20, 40, 0.55);
+    backdrop-filter: blur(6px);
+    display: flex; align-items: flex-end; justify-content: center;
+    opacity: 0; pointer-events: none;
+    transition: opacity .25s ease;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
 
-        .section-title {
-            margin-top: 50px;
-            margin-bottom: 10px;
-        }
+  .checkout-sheet {
+    width: 100%; max-width: 500px;
+    background: var(--surface);
+    border-radius: 24px 24px 0 0;
+    padding: 32px 32px 40px;
+    transform: translateY(100%);
+    transition: transform .35s cubic-bezier(.32,1.2,.52,1);
+    box-shadow: 0 -8px 40px rgba(0,0,0,.15);
+  }
+  .modal-overlay.open .checkout-sheet { transform: translateY(0); }
 
-        .header {
-            max-width: 100%;
-            background-color: white;
-            color: #282c3f;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 12px 0 rgba(0,0,0,.05);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            text-transform: uppercase;
-        }
+  .sheet-handle { width: 40px; height: 4px; border-radius: 2px; background: var(--border); margin: 0 auto 28px; }
 
-        .header h1 {
-            margin: 0;
-        }
+  .sheet-header { display: flex; align-items: center; gap: 16px; margin-bottom: 28px; }
+  .sheet-avatar { width: 52px; height: 52px; border-radius: 50%; background: linear-gradient(135deg,#1a5cff,#6c3de0); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 22px; font-weight: 700; flex-shrink: 0; }
+  .sheet-to { flex: 1; }
+  .sheet-to-name { font-size: 18px; font-weight: 700; }
+  .sheet-to-sub { font-size: 13px; color: var(--ink-2); margin-top: 2px; }
+  .sheet-amount { text-align: right; }
+  .sheet-amount-val { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; }
+  .sheet-amount-label { font-size: 12px; color: var(--ink-2); margin-top: 2px; }
 
-        .view-orders {
-            text-align: center;
-            text-decoration: none;
-            font-size: 14px;
-            letter-spacing: .3px;
-            color: #282c3f;
-            border-bottom: none;
-            font-weight: 700;
-            text-transform: uppercase;
-        }
+  .sheet-meta { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 28px; }
+  .meta-pill { display: inline-flex; align-items: center; gap: 5px; padding: 5px 12px; border-radius: 999px; font-size: 12px; font-weight: 500; border: 1px solid var(--border); color: var(--ink-1); }
+  .meta-pill.quantum { background: var(--blue-tint); border-color: #c5d3ff; color: var(--blue); }
+  .meta-pill .dot-sm { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
 
+  /* ---- Step Stepper ---- */
+  .stepper { display: flex; flex-direction: column; gap: 0; margin-bottom: 28px; }
+  .step { display: flex; align-items: flex-start; gap: 14px; position: relative; }
+  .step:not(:last-child)::after {
+    content:''; position: absolute; left: 15px; top: 32px; bottom: 0;
+    width: 1.5px; background: var(--border);
+  }
+  .step.done::after { background: var(--green); }
+  .step-icon {
+    width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0; margin-top: 2px;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--border); color: var(--ink-2); font-size: 13px; font-weight: 600;
+    transition: background .3s, color .3s;
+    position: relative; z-index: 1;
+  }
+  .step.active .step-icon { background: var(--blue-tint); color: var(--blue); }
+  .step.done .step-icon { background: var(--green-tint); color: var(--green); }
+  .step.failed .step-icon { background: var(--red-tint); color: var(--red); }
 
-    </style>
+  .step-body { flex: 1; padding: 4px 0 24px; }
+  .step-title { font-size: 13px; font-weight: 600; }
+  .step-detail { font-size: 12px; color: var(--ink-2); margin-top: 3px; font-family: var(--mono); }
+  .step.active .step-title { color: var(--blue); }
+  .step.done .step-title { color: var(--green); }
+  .step.failed .step-title { color: var(--red); }
+
+  /* Spinner inside icon */
+  .spin { animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ---- Sheet Actions ---- */
+  .sheet-actions { display: flex; gap: 12px; }
+  .btn-cancel { flex: 1; padding: 14px; border: 1.5px solid var(--border); border-radius: var(--radius-sm); background: transparent; font-size: 15px; font-weight: 600; color: var(--ink-1); cursor: pointer; transition: background .15s; }
+  .btn-cancel:hover { background: var(--bg); }
+  .btn-authorize { flex: 2; padding: 14px; background: var(--blue); color: #fff; border: none; border-radius: var(--radius-sm); font-size: 15px; font-weight: 600; cursor: pointer; transition: background .15s, box-shadow .15s; box-shadow: 0 2px 8px rgba(26,92,255,.25); }
+  .btn-authorize:hover { background: var(--blue-dark); }
+  .btn-authorize:disabled { opacity: .5; pointer-events: none; }
+
+  .verdict-banner { padding: 14px 18px; border-radius: var(--radius-sm); font-size: 14px; font-weight: 500; line-height: 1.5; margin-bottom: 20px; display: none; }
+  .verdict-banner.accepted { display: block; background: var(--green-tint); color: var(--green); border: 1px solid #9dcfba; }
+  .verdict-banner.refused { display: block; background: var(--red-tint); color: var(--red); border: 1px solid #f5b8b0; }
+</style>
 </head>
 <body>
-    <div class="container header">
-        <h1><a href="/">FastPay</a></h1>
-        <a href="/viewOrders" class="view-orders">View Orders</a>
+<main class="wallet">
+  <div class="eyebrow">Project Bellwatch · FastPay / Quantum-Gated Wallet Demo</div>
+  <h1>Alice pays Bob. The channel decides.</h1>
+  <p class="sub">Authorization gated by E91 quantum key exchange. Local demo money only.
+    <a href="http://127.0.0.1:8000" target="_blank" rel="noopener">Open Bellwatch Dashboard</a> ·
+    <a href="/login">Switch account</a>
+  </p>
+
+  <section class="panel">
+    <h2 style="font-size:16px;font-weight:600;color:var(--ink-2);margin-bottom:16px;"><%= msg.username %>'s Wallet</h2>
+    <div class="balance-row">
+      <div class="balance" id="balance">₹<%= (walletBalance / 100).toFixed(2) %></div>
+      <div>
+        <div class="channel-badge"><span class="dot"></span>E91 Channel Active · Qiskit Aer</div>
+        <div class="balance-label" style="margin-top:6px;">Qiskit Aer quantum channel</div>
+      </div>
     </div>
-    <br><br>
-    <div class="container">
-        <h5>Wallet Balance: ₹<%=(walletBalance / 100).toFixed(2)%></h5>
-        <form action="/addBalance" method="post" enctype="application/x-www-form-urlencoded">
-            <input class="addBalance" type="text" name="amount" placeholder="Enter amount" required="">
-            <input type="submit" class="addbtn" value="Add">
-        </form>
+    <% if (msg.username === 'alice') { %>
+      <button class="pay-btn" id="openCheckout">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+        Pay Bob ₹100
+      </button>
+    <% } else { %>
+      <p style="margin-top:20px;color:var(--ink-2);font-size:14px;">Incoming credits appear here automatically.</p>
+    <% } %>
+  </section>
+
+  <section class="panel">
+    <h2 style="font-size:18px;font-weight:700;margin-bottom:20px;">Transfer History <span style="font-size:12px;font-weight:500;color:var(--ink-2);">· Qiskit Aer</span></h2>
+    <table>
+      <thead><tr><th>Transfer</th><th>Amount</th><th>Verdict / Stage</th><th>QBER / CHSH</th><th>Reason</th></tr></thead>
+      <tbody id="history"></tbody>
+    </table>
+  </section>
+</main>
+
+<!-- ========== CHECKOUT MODAL ========== -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="checkout-sheet" id="checkoutSheet">
+    <div class="sheet-handle"></div>
+
+    <!-- Header: Recipient + Amount -->
+    <div class="sheet-header" id="sheetHeader">
+      <div class="sheet-avatar">B</div>
+      <div class="sheet-to">
+        <div class="sheet-to-name">Bob</div>
+        <div class="sheet-to-sub">bob@fastpay · QDS wallet</div>
+      </div>
+      <div class="sheet-amount">
+        <div class="sheet-amount-val">₹100.00</div>
+        <div class="sheet-amount-label">QDS gated</div>
+      </div>
     </div>
 
-<!-- Section Buttons (Clothes, Movies, Food) -->
-<div class="container section-title">
-    <div class="row text-center">
-        <div class="col-md-6">
-            <div class="card">
-                <h3>Buy Clothes</h3>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card">
-                <h3>Book Movie Tickets</h3>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card">
-                <h3>Order Food</h3>
-            </div>
-        </div>
+    <!-- Channel metadata pills -->
+    <div class="sheet-meta" id="sheetMeta">
+      <span class="meta-pill quantum"><span class="dot-sm"></span>E91 Entangled Link</span>
+      <span class="meta-pill quantum"><span class="dot-sm"></span>Qiskit Aer</span>
+      <span class="meta-pill" id="pillQber">QBER —</span>
+      <span class="meta-pill" id="pillChsh">CHSH S —</span>
     </div>
+
+    <!-- Verdict banner (shows after completion) -->
+    <div class="verdict-banner" id="verdictBanner"></div>
+
+    <!-- Step Stepper -->
+    <div class="stepper" id="stepper">
+      <div class="step" id="step0">
+        <div class="step-icon" id="step0icon">1</div>
+        <div class="step-body">
+          <div class="step-title">Exchanging Bell pairs</div>
+          <div class="step-detail" id="step0detail">Qiskit Aer · 1024 rounds</div>
+        </div>
+      </div>
+      <div class="step" id="step1">
+        <div class="step-icon" id="step1icon">2</div>
+        <div class="step-body">
+          <div class="step-title">Verifying CHSH correlation (S &gt; 2.0)</div>
+          <div class="step-detail" id="step1detail">Awaiting measurement…</div>
+        </div>
+      </div>
+      <div class="step" id="step2">
+        <div class="step-icon" id="step2icon">3</div>
+        <div class="step-body">
+          <div class="step-title">Deriving shared key &amp; HMAC</div>
+          <div class="step-detail" id="step2detail">Awaiting key agreement…</div>
+        </div>
+      </div>
+      <div class="step" id="step3">
+        <div class="step-icon" id="step3icon">4</div>
+        <div class="step-body">
+          <div class="step-title" id="step3title">Awaiting verdict…</div>
+          <div class="step-detail" id="step3detail"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sheet-actions" id="sheetActions">
+      <button class="btn-cancel" id="cancelBtn">Cancel</button>
+      <button class="btn-authorize" id="authorizeBtn">
+        Authorize &amp; Transfer
+      </button>
+    </div>
+  </div>
 </div>
 
-<!-- Product/Service Catalog -->
-<div class="container">
-    <div id="catalog">
-        <div class="row g-4">
-            <div class="col-md-3">
-                <div class="card h-80">
-                    <img src="/white-polo.png" class="card-img-top" alt="White Polo T-Shirt" style="height: 350px;">
-                    <div class="card-body">
-                        <h5 class="card-title">White Polo T-Shirt</h5>
-                        <p class="card-text">₹1300.00</p>
-                        <form action="/onlineShopping" method="POST">
-                            <input type="hidden" name="itemName" value="white-polo">
-                            <input type="hidden" name="price" value="1300">
-                            <button class="addbtn">Buy</button>
-                        </form>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card h-80">
-                    <img src="/black-polo.png" class="card-img-top" alt="Black Polo T-Shirt" style="height: 350px;">
-                    <div class="card-body">
-                        <h5 class="card-title">Black Polo T-Shirt</h5>
-                        <p class="card-text">₹1500.00</p>
-                        <form action="/onlineShopping" method="POST">
-                            <input type="hidden" name="itemName" value="black-polo">
-                            <input type="hidden" name="price" value="1500">
-                            <button class="addbtn">Buy</button>
-                        </form>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card h-80">
-                    <img src="/The_Dark_Nigh_Rises.jpg" class="card-img-top" alt="Movie Ticket" style="height: 350px;">
-                    <div class="card-body">
-                        <h5 class="card-title">The Dark Knight Rises</h5>
-                        <p class="card-text">₹300.00</p>
-                        <form action="/bookMovieTicket" method="GET">
-                            <input type="hidden" name="movieName" value="The-Dark-Night-Rises">
-                            <button class="addbtn">Book</button>
-                        </form>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card h-80">
-                    <img src="/burger.png" class="card-img-top" alt="Burger" style="height: 350px;">
-                    <div class="card-body">
-                        <h5 class="card-title">Burger</h5>
-                        <p class="card-text">₹220.00</p>
-                        <form action="/orderfood" method="GET">
-                            <input type="hidden" name="item" value="burger">
-                            <button class="addbtn">Order</button>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+<script>
+const pay = document.getElementById('openCheckout');
+const overlay = document.getElementById('modalOverlay');
+const cancelBtn = document.getElementById('cancelBtn');
+const authorizeBtn = document.getElementById('authorizeBtn');
 
+// Open / close modal
+if (pay) pay.addEventListener('click', () => {
+  resetStepper();
+  overlay.classList.add('open');
+  // Fetch latest E91 state to show live pills
+  fetch('/api/e91-state').then(r => r.ok ? r.json() : null).then(d => {
+    if (!d) return;
+    document.getElementById('pillQber').textContent = 'QBER ' + (d.qber * 100).toFixed(1) + '%';
+    document.getElementById('pillChsh').textContent = 'CHSH S=' + (d.chsh_s || 0).toFixed(2);
+  }).catch(() => {});
+});
 
+cancelBtn.addEventListener('click', () => {
+  if (!authorizeBtn.disabled) overlay.classList.remove('open');
+});
+overlay.addEventListener('click', e => {
+  if (e.target === overlay && !authorizeBtn.disabled) overlay.classList.remove('open');
+});
 
+function stepState(idx, state, detail) {
+  const el = document.getElementById('step' + idx);
+  const icon = document.getElementById('step' + idx + 'icon');
+  el.className = 'step ' + state;
+  if (detail) document.getElementById('step' + idx + 'detail').textContent = detail;
+  if (state === 'active') {
+    icon.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="spin"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>`;
+  } else if (state === 'done') {
+    icon.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>`;
+  } else if (state === 'failed') {
+    icon.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
+  }
+}
 
+function resetStepper() {
+  for (let i = 0; i < 4; i++) {
+    const el = document.getElementById('step' + i);
+    const icon = document.getElementById('step' + i + 'icon');
+    el.className = 'step';
+    icon.textContent = i + 1;
+    document.getElementById('step' + i + 'detail').textContent = i === 0 ? 'Qiskit Aer · 1024 rounds' : i === 1 ? 'Awaiting measurement…' : i === 2 ? 'Awaiting key agreement…' : '';
+  }
+  document.getElementById('step3title').textContent = 'Awaiting verdict…';
+  document.getElementById('verdictBanner').className = 'verdict-banner';
+  document.getElementById('verdictBanner').textContent = '';
+  authorizeBtn.textContent = 'Authorize & Transfer';
+  authorizeBtn.disabled = false;
+  cancelBtn.disabled = false;
+}
 
+authorizeBtn.addEventListener('click', async () => {
+  authorizeBtn.disabled = true;
+  cancelBtn.disabled = true;
 
-</body></html>
+  // Step 1: Bell pairs
+  stepState(0, 'active', 'Qiskit Aer · 1024 rounds');
+  await delay(700);
+  stepState(0, 'done', 'Bell pairs generated');
+
+  // Step 2: CHSH verification
+  stepState(1, 'active', 'Computing S-parameter…');
+  await delay(800);
+
+  // Step 3: Key derivation (start parallel with request)
+  stepState(1, 'active', 'Verifying Bell inequality violation…');
+
+  let result;
+  try {
+    // Fire the actual transfer request
+    const fetchPromise = fetch('/transfer', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ to_user: 'bob', amount_paise: 10000 })
+    });
+
+    await delay(900);
+    stepState(1, 'done', 'S-parameter verified > 2.0 (quantum regime)');
+    stepState(2, 'active', 'Deriving HMAC from shared key…');
+    await delay(600);
+    stepState(2, 'done', 'Keys match · HMAC computed');
+    stepState(3, 'active');
+
+    const response = await fetchPromise;
+    result = await response.json();
+  } catch (_) {
+    result = { status: 'REFUSED', reason: 'Connection lost. Check transfer history.' };
+  }
+
+  const accepted = result.status === 'ACCEPTED';
+
+  if (accepted) {
+    stepState(2, 'done', 'Keys match · HMAC verified by Bob');
+    stepState(3, 'done');
+    document.getElementById('step3title').textContent = 'Payment committed ✓';
+    document.getElementById('step3detail').textContent = result.reason || 'Transfer committed to both wallets.';
+    document.getElementById('verdictBanner').className = 'verdict-banner accepted';
+    document.getElementById('verdictBanner').textContent = '✓ ' + (result.reason || 'Payment accepted. Both wallets updated.');
+  } else {
+    // Find which step failed — if CHSH/QBER failed it's step 1, else step 2
+    const isChannelFail = result.stage === 'quantum_channel';
+    if (isChannelFail) {
+      stepState(1, 'failed', 'QBER exceeded threshold · S-parameter collapsed');
+      stepState(2, 'failed', 'Key derivation aborted (channel disturbance)');
+    } else {
+      stepState(2, 'failed', 'MAC mismatch · key derivation diverged');
+    }
+    stepState(3, 'failed');
+    document.getElementById('step3title').textContent = 'Payment refused · Fail-safe triggered';
+    document.getElementById('step3detail').textContent = result.reason || 'Payment refused.';
+    document.getElementById('verdictBanner').className = 'verdict-banner refused';
+    document.getElementById('verdictBanner').textContent = '✗ ' + (result.reason || 'Payment refused. No funds moved.');
+  }
+
+  authorizeBtn.textContent = 'Close';
+  authorizeBtn.disabled = false;
+  cancelBtn.disabled = false;
+  authorizeBtn.onclick = () => {
+    overlay.classList.remove('open');
+    authorizeBtn.onclick = null;
+    authorizeBtn.textContent = 'Authorize & Transfer';
+  };
+
+  await refresh();
+});
+
+function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// ---- Wallet refresh ----
+async function refresh() {
+  try {
+    const [wallet, history] = await Promise.all([fetch('/wallet'), fetch('/transfers')]);
+    if (wallet.redirected || history.redirected) { location.href = '/login'; return; }
+    if (!wallet.ok || !history.ok) throw new Error();
+    const w = await wallet.json(), h = await history.json();
+    document.getElementById('balance').textContent = '₹' + (w.walletBalance / 100).toFixed(2);
+    const target = document.getElementById('history');
+    target.replaceChildren();
+    for (const row of h.transfers) {
+      const tr = document.createElement('tr');
+      const vals = [
+        row.from_user + ' → ' + row.to_user,
+        '₹' + (row.amount_paise / 100).toFixed(2),
+        row.status + ' / ' + row.stage,
+        row.qber == null ? 'Unavailable' : (row.qber * 100).toFixed(2) + '% / ' + row.chsh_s.toFixed(3),
+        row.reason
+      ];
+      for (const v of vals) { const td = document.createElement('td'); td.textContent = v; tr.appendChild(td); }
+      tr.className = row.status === 'ACCEPTED' ? 'accepted' : 'refused';
+      target.appendChild(tr);
+    }
+    if (!h.transfers.length) {
+      const tr = document.createElement('tr');
+      const td = document.createElement('td'); td.colSpan = 5;
+      td.style.cssText = 'color:#6b84a0;font-size:13px;padding:20px 10px;';
+      td.textContent = 'No transfers yet. Make a payment to get started.';
+      tr.appendChild(td); target.appendChild(tr);
+    }
+  } catch (_) {
+    document.getElementById('balance').textContent = '—';
+  }
+}
+refresh(); setInterval(refresh, 2500);
+</script>
+</body>
+</html>

@@ -3,6 +3,7 @@ const router = express.Router()
 const { authenticateToken} = require('../controller/auth')
 const auth_controller = require('../controller/auth')
 const app_controller = require('../controller/app_controller')
+const transfer_controller = require('../controller/transfer_controller')
 const payment_controller = require('../controller/payment_controller') 
 
 router.get('/register', auth_controller.register)
@@ -14,6 +15,9 @@ router.get('/login', auth_controller.login)
 router.post('/login', auth_controller.login_post)
 
 router.get('/', authenticateToken, app_controller.dashboard)
+router.post('/transfer', authenticateToken, transfer_controller.transfer)
+router.get('/transfers', authenticateToken, transfer_controller.list)
+router.get('/wallet', authenticateToken, transfer_controller.wallet)
 
 router.post('/onlineShopping', authenticateToken, payment_controller.onlineShopping)
 

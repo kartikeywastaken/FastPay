@@ -62,11 +62,10 @@ const login_post = (req, res) => {
                 if (user) {
                     const jwt_token = generateAccessToken(username, user.username)
                     const authToken_fp = md5(jwt_token + "addFingerPrint")
-                    Users.update({ jwt_token: jwt_token, authToken_fp: authToken_fp }, { where: { username: username } })
-                    res.cookie('authToken_fp', authToken_fp, {domain: req.hostname, httpOnly: true});
-                    console.log("bot login")
-                    console.log(authToken_fp)
-                    res.redirect('/');
+                    Users.update({ jwt_token: jwt_token, authToken_fp: authToken_fp }, { where: { username: username } }).then(() => {
+                        res.cookie('authToken_fp', authToken_fp, {httpOnly: true, sameSite: 'lax'});
+                        res.redirect('/');
+                    });
                 } else {
                     res.render('login', { msg: "Invalid username/password" });
                 }

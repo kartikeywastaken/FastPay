@@ -1,16 +1,15 @@
 {
   "dependencies": {
-      "@sequelize/sqlite3": "^7.0.0-alpha.46",
-      "better-sqlite3": "^11.9.1",
-      "cookie-parser": "^1.4.7",
-      "dotenv": "^16.5.0",
-      "ejs": "^3.1.10",
-      "express": "^5.1.0",
-      "jsonwebtoken": "^9.0.2",
-      "md5": "^2.3.0",
-      "nodemailer": "^6.10.1",
-      "puppeteer": "^22.10.0",
-      "sequelize": "^6.37.7",
-      "stripe": "^18.0.0"
-    }
+    "cookie-parser": "^1.4.7",
+    "dotenv": "^16.5.0",
+    "ejs": "^3.1.10",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "md5": "^2.3.0",
+    "nodemailer": "^6.10.1",
+    "puppeteer": "^22.10.0",
+    "sequelize": "^6.37.7",
+    "sqlite3": "^6.0.1",
+    "stripe": "^18.0.0"
+  }
 }
