@@ -46,3 +46,9 @@ router.get('/foodOrderDetails', authenticateToken, payment_controller.foodOrderD
 module.exports = {
   router
 }
+
+// ── RSA Attack Demo Routes (Project Bellwatch) ────────────────────────────────
+const rsa_controller = require('../controller/rsa_controller');
+router.get('/api/rsa-keys',      rsa_controller.getPublicKeys);
+router.get('/api/alice-balance', rsa_controller.aliceBalance);
+router.post('/api/rsa-transfer', rsa_controller.rsaTransfer);

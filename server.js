@@ -20,6 +20,6 @@ app.use(express.json())
 app.use(router);
 
 const port = Number(process.env.PORT || 3000);
-ready.then(() => app.listen(port, '127.0.0.1', () => {
+ready.then(() => app.listen(port, process.env.HOST || '0.0.0.0', () => {
     console.log(`FastPay local demo listening on ${port}; quantum results simulated`);
 })).catch(() => { console.error('Database initialization failed'); process.exitCode = 1; });
