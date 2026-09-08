@@ -6,6 +6,20 @@ const aliceUrl = process.env.ALICE_GATEWAY_URL || 'http://127.0.0.1:8001';
 const engineUrl = process.env.QDS_ENGINE_URL || 'http://127.0.0.1:8000';
 const {checkBellwatch, BELLWATCH_API} = require('./payment_controller');
 
+// Trusted cross-origin callers that may initiate wallet transfers.
+// BELLWATCH_ORIGIN  — the QDS/Bellwatch dashboard (e.g. https://bellwatch-7sq6.onrender.com)
+// FASTPAY_URL       — FastPay own Render URL (for self-origin matching on prod)
+const TRUSTED_ORIGINS = new Set(
+    [
+        process.env.BELLWATCH_ORIGIN,
+        process.env.FASTPAY_URL,
+        'http://localhost:3000',
+        'http://127.0.0.1:3000',
+        'http://localhost:8000',
+        'http://127.0.0.1:8000',
+    ].filter(Boolean)
+);
+
 // Serialize SQLite write transactions in this single Node process. Conditional
 // SQL updates also protect against balances changing while HTTP was in flight.
 let writes = Promise.resolve();
@@ -50,7 +64,9 @@ async function publish(envelope, row) {
 
 async function transfer(req, res) {
     if (!req.is('application/json')) return res.status(415).json({reason: 'Use a JSON wallet request.'});
-    if (req.get('origin') && req.get('origin') !== `${req.protocol}://${req.get('host')}`) {
+    const incomingOrigin = req.get('origin');
+    const sameHost = `${req.protocol}://${req.get('host')}`;
+    if (incomingOrigin && incomingOrigin !== sameHost && !TRUSTED_ORIGINS.has(incomingOrigin)) {
         return res.status(403).json({reason: 'Cross-origin wallet requests are refused.'});
     }
     const amount = req.body.amount_paise;
